@@ -63,6 +63,10 @@ func TestScenarioLoversBothWerewolvesWinWithWerewolves(t *testing.T) {
 		{ID: "bob", Role: roles.Werewolf{}},
 		{ID: "charlie", Role: roles.Werewolf{}},
 		{ID: "diana", Role: roles.Villager{}},
+		{ID: "eve", Role: roles.Villager{}},
+		{ID: "frank", Role: roles.Villager{}},
+		{ID: "grace", Role: roles.Villager{}},
+		{ID: "henry", Role: roles.Villager{}},
 	})
 	mustApply(t, e, engine.Transition{
 		Kind:    engine.TransitionRoleAction,
@@ -72,6 +76,10 @@ func TestScenarioLoversBothWerewolvesWinWithWerewolves(t *testing.T) {
 	})
 	mustApply(t, e, engine.Transition{Kind: engine.TransitionKillPlayer, Target: "alice"})
 	mustApply(t, e, engine.Transition{Kind: engine.TransitionKillPlayer, Target: "diana"})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionKillPlayer, Target: "eve"})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionKillPlayer, Target: "frank"})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionKillPlayer, Target: "grace"})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionKillPlayer, Target: "henry"})
 
 	outcome := e.Position().Info.Outcome
 	if !outcome.Ended {

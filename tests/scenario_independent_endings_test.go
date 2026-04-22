@@ -30,8 +30,18 @@ func TestScenarioWhiteWolfWinsAsLastSurvivor(t *testing.T) {
 		{ID: "alice", Role: roles.WhiteWolf{}},
 		{ID: "bob", Role: roles.Werewolf{}},
 		{ID: "charlie", Role: roles.Villager{}},
+		{ID: "diana", Role: roles.Villager{}},
+		{ID: "eve", Role: roles.Villager{}},
+		{ID: "frank", Role: roles.Villager{}},
+		{ID: "grace", Role: roles.Villager{}},
+		{ID: "henry", Role: roles.Villager{}},
 	})
 	mustApply(t, e, engine.Transition{Kind: engine.TransitionKillPlayer, Target: "bob"})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionKillPlayer, Target: "diana"})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionKillPlayer, Target: "eve"})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionKillPlayer, Target: "frank"})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionKillPlayer, Target: "grace"})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionKillPlayer, Target: "henry"})
 	mustApply(t, e, engine.Transition{Kind: engine.TransitionKillPlayer, Target: "charlie"})
 
 	outcome := e.Position().Info.Outcome

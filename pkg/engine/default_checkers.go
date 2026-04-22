@@ -128,6 +128,25 @@ func (VillagersWinChecker) Check(state GameState) (Outcome, bool) {
 type WerewolvesWinChecker struct{}
 
 func (WerewolvesWinChecker) Check(state GameState) (Outcome, bool) {
+	// When both lovers are on the werewolf team and non-lovers are still alive,
+	// defer the standard win check until only the lovers remain.
+	if state.Lovers != nil {
+		a := state.Players[state.Lovers.A]
+		b := state.Players[state.Lovers.B]
+		if a != nil && a.Alive && b != nil && b.Alive &&
+			a.Role != nil && b.Role != nil &&
+			a.Role.Team() == TeamWerewolves && b.Role.Team() == TeamWerewolves {
+			for id, player := range state.Players {
+				if id == state.Lovers.A || id == state.Lovers.B {
+					continue
+				}
+				if player.Alive {
+					return Outcome{}, false
+				}
+			}
+		}
+	}
+
 	aliveWerewolves := 0
 	aliveNonWerewolves := 0
 	winners := []PlayerID{}
@@ -136,14 +155,17 @@ func (WerewolvesWinChecker) Check(state GameState) (Outcome, bool) {
 			continue
 		}
 		if player.Role != nil && player.Role.Team() == TeamWerewolves {
-			aliveWerewolves++
+			// White wolf has an independent win condition; exclude from the parity count.
+			if player.Role.ID() != RoleWhiteWolf {
+				aliveWerewolves++
+			}
 			winners = append(winners, player.ID)
 			continue
 		}
 		aliveNonWerewolves++
 	}
-	if aliveWerewolves > 0 && aliveWerewolves >= aliveNonWerewolves {
-		return Outcome{Ended: true, Kind: OutcomeWerewolves, Reason: "werewolves reached parity", WinningPlayers: winners}, true
+	if aliveWerewolves > 0 && aliveNonWerewolves <= 1 {
+		return Outcome{Ended: true, Kind: OutcomeWerewolves, Reason: "only 1 or fewer non-werewolves remain", WinningPlayers: winners}, true
 	}
 	return Outcome{}, false
 }

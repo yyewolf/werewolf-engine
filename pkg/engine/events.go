@@ -10,13 +10,15 @@ const (
 	EventGameStarted         EventKind = "game_started"
 	EventRoleAssigned        EventKind = "role_assigned"
 	EventRoleActionRequested EventKind = "role_action_requested"
+	EventPlayerInspected     EventKind = "player_inspected"
 )
 
 type Event struct {
-	Kind       EventKind
-	Transition TransitionKind
-	PlayerID   PlayerID
-	RoleID     RoleID
-	Phase      string
-	Action     string
+	Kind        EventKind
+	Transition  TransitionKind
+	PlayerID    PlayerID
+	RoleID      RoleID
+	Phase       string
+	Action      string
+	TargetCount int // number of player targets the prompted action requires
 }

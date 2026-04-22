@@ -15,4 +15,5 @@ var (
 	ErrTransitionInvalid = errors.New("invalid transition payload")
 	ErrRoleActionUnknown = errors.New("unknown role action")
 	ErrRoleActionDenied  = errors.New("role action denied")
+	ErrGameEnded         = errors.New("game has already ended")
 )

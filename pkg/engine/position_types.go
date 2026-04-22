@@ -77,6 +77,8 @@ const (
 const (
 	RoleActionChooseRole    = "choose_role"
 	RoleActionSetLovers     = "set_lovers"
+	RoleActionAttackPlayer  = "attack_player"
+	RoleActionInspectPlayer = "inspect_player"
 	RoleActionCharmPlayers  = "charm_players"
 	RoleActionDousePlayers  = "douse_players"
 	RoleActionIgnite        = "ignite"

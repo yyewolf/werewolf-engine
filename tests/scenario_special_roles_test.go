@@ -11,6 +11,7 @@ func TestScenarioAncienSurvivesFirstAttackButNotSecond(t *testing.T) {
 	e := mustNewEngine(t, []engine.BootstrapPlayer{
 		{ID: "alice", Role: roles.Ancien{}},
 		{ID: "bob", Role: roles.Werewolf{}},
+		{ID: "charlie", Role: roles.Villager{}},
 	})
 	mustApply(t, e, engine.Transition{Kind: engine.TransitionKillPlayer, Target: "alice", Cause: engine.CauseAttack})
 	if !findPlayerState(t, e, "alice").Alive {

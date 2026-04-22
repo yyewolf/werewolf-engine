@@ -9,6 +9,23 @@ func (DefaultRoleActionExecutor) Execute(game *Game, state GameState, actor Play
 	}
 
 	switch action {
+	case RoleActionAttackPlayer:
+		if (actorPlayer.Role.ID() != RoleWerewolf && actorPlayer.Role.ID() != RoleWhiteWolf) || len(targets) != 1 {
+			return ErrRoleActionDenied
+		}
+		if _, ok := state.Players[targets[0]]; !ok {
+			return ErrPlayerUnknown
+		}
+		return game.KillWithCause(targets[0], CauseAttack)
+	case RoleActionInspectPlayer:
+		if actorPlayer.Role.ID() != RoleSeer || len(targets) != 1 {
+			return ErrRoleActionDenied
+		}
+		target, ok := state.Players[targets[0]]
+		if !ok || !target.Alive {
+			return ErrPlayerUnknown
+		}
+		return nil // result is emitted as EventPlayerInspected by the engine
 	case RoleActionSetLovers:
 		if actorPlayer.Role.ID() != RoleCupid {
 			return ErrRoleActionDenied

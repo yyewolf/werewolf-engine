@@ -43,6 +43,11 @@ func NewPositionEngine(cfg Bootstrap, opts ...GameOption) (Engine, error) {
 }
 
 func (e *positionEngine) Apply(transition Transition) (Position, error) {
+	// Prevent transitions after game has ended (except during setup phases)
+	if e.turn.Phase != "lobby" && e.turn.Phase != "role_assignment" && e.game.Outcome().Ended {
+		return Position{}, ErrGameEnded
+	}
+
 	e.emit(Event{Kind: EventPreTransition, Transition: transition.Kind, Phase: e.turn.Phase, PlayerID: transition.Target, RoleID: transition.Role, Action: transition.Action})
 	switch transition.Kind {
 	case TransitionAddPlayer:
@@ -130,6 +135,11 @@ func (e *positionEngine) Apply(transition Transition) (Position, error) {
 		if err := e.actionRunner.Execute(e.game, e.game.state(), transition.Actor, transition.Action, transition.Targets); err != nil {
 			return Position{}, err
 		}
+		if transition.Action == RoleActionInspectPlayer && len(transition.Targets) == 1 {
+			if p, ok := e.game.players[transition.Targets[0]]; ok && p.Role != nil {
+				e.emit(Event{Kind: EventPlayerInspected, PlayerID: transition.Targets[0], RoleID: p.Role.ID(), Phase: e.turn.Phase})
+			}
+		}
 	case TransitionAdvanceTurn:
 		if e.turn.Phase == "role_assignment" && hasUnassignedPlayers(e.game) {
 			return Position{}, ErrGameNotReady
@@ -138,6 +148,11 @@ func (e *positionEngine) Apply(transition Transition) (Position, error) {
 		e.turn.Index++
 		if transition.NextPhase != "" {
 			e.turn.Phase = transition.NextPhase
+		} else {
+			e.turn.Phase = defaultNextPhase(e.turn.Phase)
+		}
+		if e.turn.Phase == "night" {
+			e.emitNightPrompts()
 		}
 	default:
 		return Position{}, ErrTransitionUnknown
@@ -221,7 +236,52 @@ func (e *positionEngine) Subscribe() <-chan Event {
 
 func (e *positionEngine) requestRoleAction(playerID PlayerID, roleID RoleID, action string) {
 	e.pendingActions[playerID] = action
-	e.emit(Event{Kind: EventRoleActionRequested, PlayerID: playerID, RoleID: roleID, Phase: e.turn.Phase, Action: action})
+	e.emitRoleActionRequest(playerID, roleID, action)
+}
+
+func (e *positionEngine) emitRoleActionRequest(playerID PlayerID, roleID RoleID, action string) {
+	e.emit(Event{Kind: EventRoleActionRequested, PlayerID: playerID, RoleID: roleID, Phase: e.turn.Phase, Action: action, TargetCount: roleActionTargetCount(action)})
+}
+
+func (e *positionEngine) emitNightPrompts() {
+	for _, player := range e.game.players {
+		if !player.Alive || player.Role == nil {
+			continue
+		}
+		action := nightActionForRole(player.Role.ID())
+		if action == "" {
+			continue
+		}
+		e.emitRoleActionRequest(player.ID, player.Role.ID(), action)
+	}
+}
+
+func nightActionForRole(roleID RoleID) string {
+	switch roleID {
+	case RoleWerewolf, RoleWhiteWolf:
+		return RoleActionAttackPlayer
+	case RoleSeer:
+		return RoleActionInspectPlayer
+	case RoleSavior:
+		return RoleActionProtectPlayer
+	case RoleRaven:
+		return RoleActionMarkForCrows
+	case RoleFlutePlayer:
+		return RoleActionCharmPlayers
+	case RolePyromaniac:
+		return RoleActionDousePlayers
+	default:
+		return ""
+	}
+}
+
+func roleActionTargetCount(action string) int {
+	switch action {
+	case RoleActionSetLovers:
+		return 2
+	default:
+		return 1
+	}
 }
 
 func (e *positionEngine) consumePendingRoleAction(actor PlayerID, action string) error {
@@ -271,6 +331,20 @@ func (e *positionEngine) emit(event Event) {
 	e.events = append(e.events, event)
 	for _, subscriber := range e.subscribers {
 		subscriber <- event
+	}
+}
+
+// defaultNextPhase returns the standard next phase for a given phase.
+func defaultNextPhase(phase string) string {
+	switch phase {
+	case "role_assignment":
+		return "night"
+	case "night":
+		return "day_vote"
+	case "day_vote":
+		return "night"
+	default:
+		return phase
 	}
 }
 

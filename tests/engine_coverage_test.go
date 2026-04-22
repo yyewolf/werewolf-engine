@@ -190,14 +190,19 @@ func TestPositionEngineValidationBranches(t *testing.T) {
 		t.Fatalf("expected ErrTransitionInvalid for unknown role, got %v", err)
 	}
 
-	e3 := mustNewEngine(t, []engine.BootstrapPlayer{{ID: "alice", Role: roles.Villager{}}})
+	e3 := mustNewEngine(t, []engine.BootstrapPlayer{
+		{ID: "alice", Role: roles.Villager{}},
+		{ID: "bob", Role: roles.Werewolf{}},
+		{ID: "charlie", Role: roles.Villager{}},
+		{ID: "diana", Role: roles.Villager{}},
+	})
 	if _, err := e3.Apply(engine.Transition{Kind: engine.TransitionRoleAction, Actor: "alice", Action: "mystery_action"}); err != engine.ErrRoleActionUnknown {
 		t.Fatalf("expected ErrRoleActionUnknown, got %v", err)
 	}
 	if _, err := e3.Apply(engine.Transition{Kind: engine.TransitionKillPlayer, Target: "alice"}); err != nil {
 		t.Fatalf("kill existing player: %v", err)
 	}
-	if _, err := e3.Apply(engine.Transition{Kind: engine.TransitionCastVote, Actor: "alice", Target: "alice"}); err != engine.ErrPhaseInvalid {
+	if _, err := e3.Apply(engine.Transition{Kind: engine.TransitionCastVote, Actor: "bob", Target: "charlie"}); err != engine.ErrPhaseInvalid {
 		t.Fatalf("expected ErrPhaseInvalid outside day_vote, got %v", err)
 	}
 }
@@ -456,10 +461,20 @@ func TestAdditionalPositionEngineValidationBranches(t *testing.T) {
 		t.Fatalf("expected ErrPhaseInvalid for empty queued role, got %v", err)
 	}
 	mustApply(t, e, engine.Transition{Kind: engine.TransitionAddPlayer, Target: "alice"})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAddPlayer, Target: "bob"})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAddPlayer, Target: "charlie"})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAddPlayer, Target: "diana"})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAddPlayer, Target: "eve"})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAddPlayer, Target: "frank"})
 	if _, err := e.Apply(engine.Transition{Kind: engine.TransitionAddPlayer, Target: "alice"}); err != engine.ErrPlayerExists {
 		t.Fatalf("expected ErrPlayerExists for duplicate add player, got %v", err)
 	}
 	mustApply(t, e, engine.Transition{Kind: engine.TransitionAddRole, Role: engine.RoleVillager})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAddRole, Role: engine.RoleVillager})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAddRole, Role: engine.RoleVillager})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAddRole, Role: engine.RoleVillager})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAddRole, Role: engine.RoleVillager})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAddRole, Role: engine.RoleWerewolf})
 	mustApply(t, e, engine.Transition{Kind: engine.TransitionStartGame})
 	if _, err := e.Apply(engine.Transition{Kind: engine.TransitionAddRole, Role: engine.RoleWerewolf}); err != engine.ErrPhaseInvalid {
 		t.Fatalf("expected ErrPhaseInvalid for add role outside lobby, got %v", err)
@@ -480,6 +495,11 @@ func TestAdditionalPositionEngineValidationBranches(t *testing.T) {
 		t.Fatalf("expected ErrPlayerUnknown for missing kill target, got %v", err)
 	}
 	mustApply(t, e, engine.Transition{Kind: engine.TransitionAssignRole, Target: "alice", Role: engine.RoleVillager})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAssignRole, Target: "bob", Role: engine.RoleVillager})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAssignRole, Target: "charlie", Role: engine.RoleVillager})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAssignRole, Target: "diana", Role: engine.RoleVillager})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAssignRole, Target: "eve", Role: engine.RoleVillager})
+	mustApply(t, e, engine.Transition{Kind: engine.TransitionAssignRole, Target: "frank", Role: engine.RoleWerewolf})
 	if _, err := e.Apply(engine.Transition{Kind: engine.TransitionAdvanceTurn, NextPhase: "day_vote"}); err != nil {
 		t.Fatalf("advance to day_vote: %v", err)
 	}
@@ -491,6 +511,7 @@ func TestAdditionalPositionEngineValidationBranches(t *testing.T) {
 		Players: []engine.BootstrapPlayer{
 			{ID: "alice", Role: roles.Villager{}},
 			{ID: "bob", Role: roles.Villager{}},
+			{ID: "carol", Role: roles.Werewolf{}},
 		},
 		InitialTurn: engine.TurnInfo{Phase: "day_vote"},
 	}, engine.WithDeathSideEffects(errorDeathChecker{err: errors.New("resolve failed")}))
